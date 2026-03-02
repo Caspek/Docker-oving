@@ -1,0 +1,26 @@
+services:
+  docker-oving-api:
+    build: ./server
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://docker_oving:docker_oving@docker-oving-db:5432/docker_oving
+      - NODE_ENV=production
+    depends_on:
+      - docker-oving-db
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  docker-oving-db:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=docker_oving
+      - POSTGRES_PASSWORD=docker_oving
+      - POSTGRES_DB=docker_oving
+    ports:
+      - "5432:5432"
+    volumes:
+      - docker_oving_dbdata:/var/lib/postgresql/data
+
+volumes:
+  docker_oving_dbdata:

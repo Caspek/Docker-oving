@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Docker-oving – Code Runner</title>
+  <style>
+    body { font-family: system-ui, Arial; margin: 24px; max-width: 1000px; }
+    textarea { width: 100%; height: 260px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    button { padding: 10px 14px; cursor: pointer; }
+    pre { background: #111; color: #eee; padding: 12px; overflow: auto; }
+    .box { border: 1px solid #ddd; padding: 12px; border-radius: 10px; }
+    .muted { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Docker-oving</h1>
+  <p class="muted">Skriv JavaScript, kjør på serveren i en isolert Docker-container, og se resultatet her.</p>
+
+  <div class="box">
+    <div class="row">
+      <label><b>Språk:</b> JavaScript</label>
+      <button id="runBtn">Kjør</button>
+      <span id="status" class="muted"></span>
+    </div>
+
+    <textarea id="code">// Skriv JS her:
+console.log("Hello from Docker-oving!");
+console.log("2 + 2 =", 2 + 2);
+</textarea>
+  </div>
+
+  <h2>Resultat</h2>
+  <div class="box">
+    <div><b>stdout</b></div>
+    <pre id="stdout"></pre>
+
+    <div style="margin-top:10px"><b>stderr</b></div>
+    <pre id="stderr"></pre>
+
+    <div class="muted" id="meta"></div>
+  </div>
+
+  <script>
+    const API = "http://localhost:3000";
+
+    const runBtn = document.getElementById("runBtn");
+    const codeEl = document.getElementById("code");
+    const stdoutEl = document.getElementById("stdout");
+    const stderrEl = document.getElementById("stderr");
+    const statusEl = document.getElementById("status");
+    const metaEl = document.getElementById("meta");
+
+    runBtn.addEventListener("click", async () => {
+      stdoutEl.textContent = "";
+      stderrEl.textContent = "";
+      metaEl.textContent = "";
+      statusEl.textContent = "Kjører...";
+
+      try {
+        const resp = await fetch(API + "/api/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lang: "js", code: codeEl.value })
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || "Unknown error");
+
+        stdoutEl.textContent = data.stdout || "";
+        stderrEl.textContent = data.stderr || "";
+        metaEl.textContent = `exitCode=${data.exitCode}, ms=${data.ms}, runId=${data.id}`;
+        statusEl.textContent = "Ferdig";
+      } catch (e) {
+        statusEl.textContent = "Feil";
+        stderrEl.textContent = String(e.message || e);
+      }
+    });
+  </script>
+</body>
+</html>
